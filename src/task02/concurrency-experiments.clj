@@ -63,8 +63,10 @@
 (defn a-reset-counter [name]
   (send counters-agent assoc name 0))
 
+(defn long-running-assoc[m name value] (do (Thread/sleep 5000)(assoc m name value)))
+
 (defn a-long-change-counter [name]
-  (send counters-agent #(do ((reduce + (range 1 1000)) (assoc name 999)))))
+  (send counters-agent long-running-assoc name 999))
 
 @counters-agent
 
@@ -72,4 +74,24 @@
 
 (a-long-change-counter :test)
 
+(a-reset-counter :test)
+
+(send counters-agent long-running-assoc name 999)
 (a-dec-counter :test)
+
+(def err-agent (agent 1))
+
+(send err-agent (fn [_] (throw (Exception. "we have a problem!"))))
+
+(send err-agent identity)
+
+(def err-agent (agent 1 :error-mode :continue))
+
+(send err-agent inc)
+
+@err-agent
+
+(def data (atom []))
+(swap! data into [1 2 3])
+(into [1 2 3] [3 4 6])
+@data
