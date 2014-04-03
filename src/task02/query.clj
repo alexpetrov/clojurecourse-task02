@@ -1,5 +1,7 @@
 (ns task02.query
-  (:use [task02 helpers db]))
+  (:use [task02 helpers db])
+  (:use [clojure.core.match :only (match)])
+)
 
 ;; Функция выполняющая парсинг запроса переданного пользователем
 ;;
@@ -34,11 +36,33 @@
 ;; ("student" :where #<function> :order-by :id :limit 2 :joins [[:id "subject" :sid]])
 ;; > (parse-select "werfwefw")
 ;; nil
+
+(def req (vec (.split "select students where id > 10" " ")))
+
+(parse-query req)
+
 (defn parse-select [^String sel-string]
-  :implement-me)
+  (let [query (vec (.split sel-string " "))]
+    (parse-query query)))
+;; (parse-select "select students")
 
-(defn make-where-function [& args] :implement-me)
+(defn parse-query [query]
+  (match query
+         ["select" tbl] (list tbl)
+         ["select" tbl & rest] (flatten (list tbl (parse-where-clause (vec (drop 2 query)))))
+         :else "stub"))
 
+;; (parse-where-clause ["where" "id" "=" "sid"])
+(defn parse-where-clause [query]
+  (match query
+         ["where" first sign second & _] (list :where (make-where-function first sign second))
+         :else (list query)))
+
+(defn make-where-function [first sign second] #(sign ((keyword first) %) second))
+;; (apply (make-where-function "id" "=" "10") {:id 10} )
+;; (apply (fn [arg] (= (:id arg) 10)) {:id 11} )
+;; (keyword first)
+;; (def first "sdfsf")
 ;; Выполняет запрос переданный в строке.  Бросает исключение если не удалось распарсить запрос
 
 ;; Примеры вызова:
