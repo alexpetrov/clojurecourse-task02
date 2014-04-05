@@ -32,37 +32,62 @@
 ;; ("student" :where #<function> :limit 2)
 ;; > (parse-select "select student where id = 10 order by id limit 2")
 ;; ("student" :where #<function> :order-by :id :limit 2)
+;; > (parse-select "select student where id = 10 order by id")
+
 ;; > (parse-select "select student where id = 10 order by id limit 2 join subject on id = sid")
 ;; ("student" :where #<function> :order-by :id :limit 2 :joins [[:id "subject" :sid]])
 ;; > (parse-select "werfwefw")
 ;; nil
+(def sign->fn
+  {:= =
+   :> >
+   :< <
+   :!= not=})
+
 
 (def req (vec (.split "select students where id > 10" " ")))
 
-(parse-query req)
+(defn make-where-function [first sign second]
+   #(((keyword sign) sign->fn) ((keyword first) %) second))
+;; (parse-joins (vec (.split "join subject on id = sid join subject on id = sid" " ")))
 
-(defn parse-select [^String sel-string]
-  (let [query (vec (.split sel-string " "))]
-    (parse-query query)))
-;; (parse-select "select students")
+(defn parse-joins [query]
+  ()
+  #_(match query
+       ["join" entity "on" field1 "=" field2 & _] (vector (vector (keyword field1) entity (keyword field2)) (parse-joins (vec (drop 6 query))))
+       :else ()))
 
-(defn parse-query [query]
+(defn parse-limit [query]
   (match query
-         ["select" tbl] (list tbl)
-         ["select" tbl & rest] (flatten (list tbl (parse-where-clause (vec (drop 2 query)))))
-         :else "stub"))
+         ["limit" limit & _]
+         (identity (list :limit (parse-int limit)
+                        (parse-joins (vec (drop 2 query)))))
+         :else ()))
+
+(defn parse-order-by [query]
+  (match query
+         ["order" "by" field & _]
+         (identity (list :order-by (keyword field)
+                        (parse-limit (vec (drop 3 query)))))
+         :else ()))
+
 
 ;; (parse-where-clause ["where" "id" "=" "sid"])
 (defn parse-where-clause [query]
   (match query
-         ["where" first sign second & _] (list :where (make-where-function first sign second))
-         :else (list query)))
+         ["where" first sign second & _] (identity (list :where (make-where-function first sign second) (parse-order-by (vec (drop 4 query)))))
+         :else ()))
 
-(defn make-where-function [first sign second] #(sign ((keyword first) %) second))
-;; (apply (make-where-function "id" "=" "10") {:id 10} )
-;; (apply (fn [arg] (= (:id arg) 10)) {:id 11} )
-;; (keyword first)
-;; (def first "sdfsf")
+(defn parse-query [query]
+  (match query
+         ["select" tbl & _] (flatten (list tbl (parse-where-clause (vec (drop 2 query)))))
+         :else ()))
+
+
+(defn parse-select [^String sel-string]
+  (let [query (vec (.split sel-string " "))]
+    (parse-query query)))
+
 ;; Выполняет запрос переданный в строке.  Бросает исключение если не удалось распарсить запрос
 
 ;; Примеры вызова:
