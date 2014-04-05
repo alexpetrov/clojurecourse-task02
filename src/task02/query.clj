@@ -34,7 +34,7 @@
 ;; ("student" :where #<function> :order-by :id :limit 2)
 ;; > (parse-select "select student where id = 10 order by id")
 
-;; > (parse-select "select student where id = 10 order by id limit 2 join subject on id = sid")
+;; > (parse-select "select student where id = 10 order by id limit 2 join subject on id = sid join subject2 on id = sid" )
 ;; ("student" :where #<function> :order-by :id :limit 2 :joins [[:id "subject" :sid]])
 ;; > (parse-select "werfwefw")
 ;; nil
@@ -44,45 +44,48 @@
    :< <
    :!= not=})
 
-
-(def req (vec (.split "select students where id > 10" " ")))
-
 (defn make-where-function [first sign second]
    #(((keyword sign) sign->fn) ((keyword first) %) second))
-;; (parse-joins (vec (.split "join subject on id = sid join subject on id = sid" " ")))
+
+;; (parse-join (vec (.split "join subject on id = sid join subject1 on id = sid" " ")))
+;; (parse-joins (vec (.split "join subject on id = sid join subject1 on id = sid join subject2 on id = sid" " ")))
 
 (defn parse-joins [query]
-  ()
-  #_(match query
-       ["join" entity "on" field1 "=" field2 & _] (vector (vector (keyword field1) entity (keyword field2)) (parse-joins (vec (drop 6 query))))
-       :else ()))
-
-(defn parse-limit [query]
   (match query
-         ["limit" limit & _]
-         (identity (list :limit (parse-int limit)
-                        (parse-joins (vec (drop 2 query)))))
+     ["join" entity "on" field1 "=" field2 & _]
+         (-> (parse-joins (vec (drop 6 query)))
+             (conj (vector (keyword field1) entity (keyword field2))))
          :else ()))
 
-(defn parse-order-by [query]
+(defn parse-join [query]
   (match query
-         ["order" "by" field & _]
-         (identity (list :order-by (keyword field)
-                        (parse-limit (vec (drop 3 query)))))
-         :else ()))
-
-
-;; (parse-where-clause ["where" "id" "=" "sid"])
-(defn parse-where-clause [query]
-  (match query
-         ["where" first sign second & _] (identity (list :where (make-where-function first sign second) (parse-order-by (vec (drop 4 query)))))
-         :else ()))
+         ["join" & _] (into [] (parse-joins query))))
 
 (defn parse-query [query]
   (match query
-         ["select" tbl & _] (flatten (list tbl (parse-where-clause (vec (drop 2 query)))))
-         :else ()))
+     ["select" tbl & _]
+         (-> (parse-query (vec (drop 2 query)))
+             (conj tbl)
+             #_(vec))
+     ["where" first sign second & _]
+         (-> (parse-query (vec (drop 4 query)))
+             (conj (make-where-function first sign second))
+             (conj :where))
+     ["order" "by" field & _]
+         (-> (parse-query (vec (drop 3 query)))
+             (conj (keyword field))
+             (conj :order-by))
+     ["limit" limit & _]
+         (-> (parse-query (vec (drop 2 query)))
+             (conj (parse-int limit))
+             (conj :limit))
+     ["join" & _]
+        (-> (parse-join query)
+            (list)
+            (conj :joins))
+     :else ()))
 
+;; > (parse-select "select student")
 
 (defn parse-select [^String sel-string]
   (let [query (vec (.split sel-string " "))]
