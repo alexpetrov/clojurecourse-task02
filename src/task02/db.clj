@@ -34,15 +34,19 @@
      (= lname "student-subject") student-subject
      )))
 
+(def empty-vector (constantly []) )
 ;;; Данная функция загружает начальные данные из файлов .csv
 ;;; и сохраняет их в изменяемых переменных student, subject, student-subject
 (defn load-initial-data []
   ;;; :implement-me может быть необходимо добавить что-то еще
+  (reset! student [])
   (swap! student into (->> (data-table (csv/read-csv (slurp "student.csv")))
                      (map #(str-field-to-int :id %))
                      (map #(str-field-to-int :year %))))
+  (swap! subject empty-vector)
   (swap! subject into (->> (data-table (csv/read-csv (slurp "subject.csv")))
                      (map #(str-field-to-int :id %))))
+  (swap! student-subject empty-vector)
   (swap! student-subject
          into (->> (data-table (csv/read-csv (slurp "student_subject.csv")))
                              (map #(str-field-to-int :subject_id %))

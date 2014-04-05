@@ -3,8 +3,6 @@
             [task02.query :as q]
             [clojure.test :refer :all]))
 
-(load-initial-data)
-
 (deftest insert-test
   (load-initial-data)
   (testing "insertion..."
