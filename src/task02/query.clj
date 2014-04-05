@@ -42,10 +42,19 @@
   {:= =
    :> >
    :< <
+   :<= <=
+   :>= >=
    :!= not=})
 
+(defn prepare-value-for-where [value]
+  (if (re-matches #"'.*'" value)
+    value
+    (parse-int value)))
+;; (re-matches #"'.*'" "'10'")
+;; (prepare-value-for-where "10")
+
 (defn make-where-function [first sign second]
-   #(((keyword sign) sign->fn) ((keyword first) %) second))
+   #(((keyword sign) sign->fn) ((keyword first) %) (prepare-value-for-where second)))
 
 ;; (parse-join (vec (.split "join subject on id = sid join subject1 on id = sid" " ")))
 ;; (parse-joins (vec (.split "join subject on id = sid join subject1 on id = sid join subject2 on id = sid" " ")))
@@ -83,12 +92,20 @@
         (-> (parse-join query)
             (list)
             (conj :joins))
-     :else ()))
+     :else nil))
 
 ;; > (parse-select "select student")
 
+(def special-words #{"select" "where" "order" "by" "limit" "join"})
+
+(defn downcase-special-words [query]
+  (for [elem query]
+    (if (contains? special-words (.toLowerCase elem))
+      (.toLowerCase elem)
+      elem)))
+
 (defn parse-select [^String sel-string]
-  (let [query (vec (.split sel-string " "))]
+  (let [query (vec (downcase-special-words (.split sel-string " ")))]
     (parse-query query)))
 
 ;; Выполняет запрос переданный в строке.  Бросает исключение если не удалось распарсить запрос
