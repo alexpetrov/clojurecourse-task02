@@ -24,7 +24,6 @@
         (if (= (str/lower-case s) "quit")
           (deliver should-be-finished true) ;;; 1) сообщить основному потоку что мы завершаем выполнение.
                ;;; для этого необходимо установить переменную should-be-finished в true
-               ;;;n
           (prn (perform-query s)) ;;; 2) выполнить запрос при помощи perform-query и записать
                ;;; результат в переопределенный *out*
           ))
