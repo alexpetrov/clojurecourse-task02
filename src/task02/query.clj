@@ -74,8 +74,7 @@
   (match query
      ["select" tbl & _]
          (-> (parse-query (vec (drop 2 query)))
-             (conj tbl)
-             #_(vec))
+             (conj tbl))
      ["where" first sign second & _]
          (-> (parse-query (vec (drop 4 query)))
              (conj (make-where-function first sign second))
