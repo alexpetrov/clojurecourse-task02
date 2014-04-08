@@ -63,7 +63,7 @@
   (match query
      ["join" entity "on" field1 "=" field2 & _]
          (-> (parse-joins (vec (drop 6 query)))
-             (conj (vector (keyword field1) entity (keyword field2))))
+             (conj [(keyword field1) entity (keyword field2)]))
          :else ()))
 
 (defn parse-join [query]
