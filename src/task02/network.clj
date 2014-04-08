@@ -37,7 +37,7 @@
 (defn- run-loop [server-sock]
   (try
     (let [^Socket sock (.accept server-sock)]
-      (.start (Thread. (fn [] (handle-request sock)))) ;; выполнить функцию handle-request в отдельном потоке
+      (future (handle-request sock)) ;; выполнить функцию handle-request в отдельном потоке
       )
     (catch SocketTimeoutException ex)
     (catch Throwable ex
