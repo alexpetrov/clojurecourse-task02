@@ -11,14 +11,8 @@
 ;; Hint: *in*, *out*, io/writer, io/reader, socket.getOutputStream(), socket.getInputStream(), socket.close(), binding
 ;;       deliver, prn
 (defn handle-request [^Socket sock]
-  (binding [*out* (-> sock
-                      .getOutputStream
-                      OutputStreamWriter.
-                      BufferedWriter.) ;; FIXME
-            *in* (-> sock
-                     .getInputStream
-                     InputStreamReader.
-                     BufferedReader.)] ;; переопределить *in* & *out* чтобы они указывали на входной и выходной потоки сокета
+  (binding [*out* (io/writer sock)
+            *in* (io/reader sock)] ;; переопределить *in* & *out* чтобы они указывали на входной и выходной потоки сокета
     (try
       (let [s (read-line)] ;; считать данные из переопределенного *in*
         (if (= (str/lower-case s) "quit")
