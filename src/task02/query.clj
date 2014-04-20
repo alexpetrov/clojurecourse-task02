@@ -61,50 +61,47 @@
 
 (defn parse-joins [query]
   (match query
-     ["join" entity "on" field1 "=" field2 & _]
+     [(_ :guard #(= "join" (.toLowerCase %))) entity
+      (_ :guard #(= "on" (.toLowerCase %)))
+      field1 "=" field2 & _]
          (-> (parse-joins (vec (drop 6 query)))
              (conj [(keyword field1) entity (keyword field2)]))
          :else ()))
 
 (defn parse-join [query]
   (match query
-         ["join" & _] (into [] (parse-joins query))))
+     [(_ :guard #(= "join" (.toLowerCase %))) & _]
+       (into [] (parse-joins query))))
 
 (defn parse-query [query]
   (match query
-     ["select" tbl & _]
+     [(_ :guard #(= "select" (.toLowerCase %))) tbl & _]
          (-> (parse-query (vec (drop 2 query)))
              (conj tbl))
-     ["where" first sign second & _]
+     [(_ :guard #(= "where" (.toLowerCase %))) first sign second & _]
          (-> (parse-query (vec (drop 4 query)))
              (conj (make-where-function first sign second))
              (conj :where))
-     ["order" "by" field & _]
+     [(_ :guard #(= "order" (.toLowerCase %)))
+      (_ :guard #(= "by" (.toLowerCase %))) field & _]
          (-> (parse-query (vec (drop 3 query)))
              (conj (keyword field))
              (conj :order-by))
-     ["limit" limit & _]
+     [(_ :guard #(= "limit" (.toLowerCase %))) limit & _]
          (-> (parse-query (vec (drop 2 query)))
              (conj (parse-int limit))
              (conj :limit))
-     ["join" & _]
+     [(_ :guard #(= "join" (.toLowerCase %))) & _]
         (-> (parse-join query)
             (list)
             (conj :joins))
      :else nil))
 
+
 ;; > (parse-select "select student")
 
-(def special-words #{"select" "where" "order" "by" "limit" "join"})
-
-(defn downcase-special-words [query]
-  (for [elem query]
-    (if (contains? special-words (.toLowerCase elem))
-      (.toLowerCase elem)
-      elem)))
-
 (defn parse-select [^String sel-string]
-  (let [query (vec (downcase-special-words (.split sel-string " ")))]
+  (let [query (vec (.split sel-string " "))]
     (parse-query query)))
 
 ;; Выполняет запрос переданный в строке.  Бросает исключение если не удалось распарсить запрос

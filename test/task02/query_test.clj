@@ -16,7 +16,7 @@
 
   (testing (str "parse-select on 'select student where id = 10'")
     (let [[tb-name & {:keys [where limit order-by joins]}]
-          (parse-select "select student where id = 10")]
+          (parse-select "sElEct student whEre id = 10")]
       (is (= tb-name "student"))
       (is (fn? where))
       (is (nil? order-by))
@@ -25,7 +25,7 @@
 
   (testing (str "parse-select on 'select student where id = 10'")
     (let [[tb-name & {:keys [where limit order-by joins]}]
-          (parse-select "select student where id = 10 order by year limit 5 join subject on id = sid")]
+          (parse-select "select student where id = 10 ordEr bY year limIt 5 joiN subject ON id = sid")]
       (is (= tb-name "student"))
       (is (fn? where))
       (is (= order-by :year))
